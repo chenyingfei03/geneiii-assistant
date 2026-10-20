@@ -452,10 +452,10 @@ async function aiData(){
     const out=await sampleFn.json(`你是天猫美妆个护类目品牌旗舰店的资深电商运营。下面是店铺近 8 天的经营数据和代码已算出的波动分析（对比基准为前 7 天均值）。
 【近 8 天数据】${JSON.stringify(recent)}
 【波动分析】支付金额变化 ${A.k.sales.toFixed(1)}%；访客贡献 ${A.contrib.visitors.toFixed(1)}，转化率贡献 ${A.contrib.conv.toFixed(1)}，客单价贡献 ${A.contrib.aov.toFixed(1)} 个百分点；渠道变化 ${JSON.stringify(A.chans.map(c=>({渠道:c.c,变化:c.p.toFixed(1)+"%"})))}
-任务：基于数据给出初步判断。只能依据给出的数据推理，数据无法证明的原因要标明"需核实"。按可能性从高到低列出原因，每个原因给出数据证据和在天猫后台（千牛、生意参谋、万相台）的具体排查动作，最后给出今天的 3 个行动建议。
+任务：基于数据给出初步判断。只能依据给出的数据推理，数据无法证明的原因要标明"需核实"。按可能性从高到低列出最多 3 个原因，每个原因给出数据证据和在天猫后台（千牛、生意参谋、万相台）的具体排查动作，最后给出今天的 3 个行动建议。务必简洁：结论不超过 80 字，每个字段不超过 80 字。
 只输出 JSON：{"judgement":"一句话结论","causes":[{"cause":"可能原因","evidence":"数据证据","check":"去哪里查、查什么"}],"todo":["行动1","行动2","行动3"]}`,{modelTier:"default",cache:false});
     $("dAi").innerHTML=`<div class="card ai-out"><b>${esc(out.judgement)}</b><h4>可能原因</h4><ul>${(out.causes||[]).map(c=>`<li><b>${esc(c.cause)}</b><br><span class="hint" style="margin:0">证据：${esc(c.evidence)}</span><br>排查：${esc(c.check)}</li>`).join("")}</ul><h4>今天的行动</h4><ul>${(out.todo||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`;
-  }catch(e){const m={not_granted:"页面调用 AI 需要你的授权：请在弹窗中点「允许」，或在页面右上角的权限设置里开启后刷新。",rate_limited:"请求太频繁，请稍等一分钟再试。",invalid_json:"AI 返回的格式不完整，请再点一次。",usage_limit:"当前账号的 AI 用量已达上限。"};$("dAi").innerHTML=`<p class="err">${esc(m[e.code]||e.message||"分析失败，请重试。")}${e.code?`（错误代码：${esc(e.code)}）`:""}</p>`}
+  }catch(e){const m={not_granted:"页面调用 AI 需要你的授权：请在弹窗中点「允许」，或在页面右上角的权限设置里开启后刷新。",rate_limited:"请求太频繁，请稍等一分钟再试。",invalid_json:"AI 返回的格式不完整，请再点一次。",usage_limit:"当前账号的 AI 用量已达上限。",insufficient_balance:"AI 账户余额不足，请充值后再试。"};$("dAi").innerHTML=`<p class="err">${esc(m[e.code]||e.message||"分析失败，请重试。")}${e.code?`（错误代码：${esc(e.code)}）`:""}</p>`}
   finally{btn.disabled=false;btn.textContent=old}
 }
 

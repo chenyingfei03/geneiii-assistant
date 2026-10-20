@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>仅三天猫运营助手</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: 两个板块用顶部分段切换；每个板块都是"输入 → 结论 → 明细"自上而下，结论放最前 */
+:root{
+  --bg:#F2F4F1; --surface:#FFFFFF; --sunk:#E9EDE9; --ink:#1B2420; --muted:#5D6A64; --line:#D6DDD8;
+  --accent:#2E4B8F; --accent-soft:#E3E9F6; --red:#BE3229; --red-soft:#FBE6E3; --yellow:#946A00; --yellow-soft:#FBF0D2; --green:#2F7A4F; --green-soft:#E1F1E7;
+  --f-display:"Noto Serif SC","Songti SC",serif; --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111614; --surface:#19201D; --sunk:#141A18; --ink:#E5ECE8; --muted:#98A59F; --line:#2B3431;
+  --accent:#93AAE8; --accent-soft:#1F2840; --red:#F27A6E; --red-soft:#3A1E1B; --yellow:#E2B44A; --yellow-soft:#352C15; --green:#6BC48F; --green-soft:#16301F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111614; --surface:#19201D; --sunk:#141A18; --ink:#E5ECE8; --muted:#98A59F; --line:#2B3431;
+  --accent:#93AAE8; --accent-soft:#1F2840; --red:#F27A6E; --red-soft:#3A1E1B; --yellow:#E2B44A; --yellow-soft:#352C15; --green:#6BC48F; --green-soft:#16301F; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14.5px;line-height:1.7;margin:0}
+.wrap{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:26px 56px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 20px}
+header h1{font-family:var(--f-display);font-size:26px;line-height:1.3;margin:0}
+header p{margin:4px 0 0;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:inherit;border:0;background:none;color:var(--muted);padding:8px 16px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;line-height:1.35}
+.seg button b{font-weight:500;color:var(--ink);font-size:14px}
+.seg button small{font-size:11.5px}
+.seg button[aria-selected="true"]{background:var(--accent-soft)}
+.seg button[aria-selected="true"] b{color:var(--accent)}
+.status{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;margin-top:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted)} .dot.on{background:var(--green)}
+.lead{margin:22px 0 14px;font-size:15px}
+.lead b{font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 200px;min-width:0}
+.field label,.lbl{font-size:12px;color:var(--muted)}
+select,textarea,input[type=text]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+textarea{resize:vertical;min-height:120px;font-size:15px;line-height:1.7}
+details.settings{margin-top:10px;font-size:13px}
+details.settings summary{cursor:pointer;color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer;background:var(--bg)}
+.chip input{margin:0;accent-color:var(--accent)} .chip.special{border-style:dashed}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.btn{font:inherit;font-weight:500;border:1px solid var(--accent);background:var(--accent);color:var(--surface);padding:9px 18px;border-radius:7px;cursor:pointer}
+.btn.ghost{background:none;color:var(--accent)}
+.btn.sm{font-size:12.5px;padding:3px 10px;border-radius:5px}
+.btn:disabled{opacity:.5;cursor:default}
+.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.err{color:var(--red);font-size:13px}
+button:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:currentColor;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+h2.sec{font-size:13px;color:var(--muted);font-weight:500;margin:24px 0 10px;letter-spacing:.04em}
+/* 预审结果 */
+.verdict{display:flex;align-items:center;gap:14px;border-radius:10px;padding:14px 18px;margin-top:16px}
+.verdict .big{font-size:20px;font-weight:700}
+.verdict .sub{font-size:13px}
+.verdict.red{background:var(--red-soft);color:var(--red)} .verdict.yellow{background:var(--yellow-soft);color:var(--yellow)} .verdict.green{background:var(--green-soft);color:var(--green)}
+.verdict .cnt{margin-left:auto;font-family:var(--f-mono);font-size:13px;white-space:nowrap}
+.marked{font-size:16px;line-height:1.9;word-break:break-word;margin-top:12px}
+mark.r{background:var(--red-soft);color:var(--red);border-bottom:2px solid var(--red);padding:0 1px;border-radius:2px}
+mark.y{background:var(--yellow-soft);color:var(--yellow);border-bottom:2px dashed var(--yellow);padding:0 1px;border-radius:2px}
+.issues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.issue{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.issue:last-child{border-bottom:0}
+.issue .w{font-weight:700}
+.issue.red .w{color:var(--red)} .issue.yellow .w{color:var(--yellow)} .issue.ai .w{color:var(--accent)}
+.issue .lv{font-size:11px;padding:1px 7px;border-radius:999px;margin-left:6px;font-weight:400}
+.issue.red .lv{background:var(--red-soft);color:var(--red)} .issue.yellow .lv{background:var(--yellow-soft);color:var(--yellow)} .issue.ai .lv{background:var(--accent-soft);color:var(--accent)}
+.issue .why{font-size:12.5px;color:var(--muted)}
+.issue .fix{font-size:13px}
+.issue .r{grid-row:1 / span 3;grid-column:2;align-self:center}
+.rewrite{margin-top:12px;border:1px solid var(--accent);border-radius:10px;padding:16px 18px;background:var(--surface)}
+.rewrite .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.rewrite .head b{color:var(--accent)}
+.changes{margin:10px 0 0;padding:0;list-style:none;font-size:13px;display:flex;flex-direction:column;gap:4px}
+.changes del{color:var(--red);text-decoration:line-through}
+.changes ins{color:var(--green);text-decoration:none;font-weight:500}
+.changes .y{color:var(--muted)}
+.pass{color:var(--green);font-size:13px}
+/* 数据看板 */
+.dhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px}
+.badge{font-size:11.5px;padding:2px 9px;border-radius:999px;background:var(--yellow-soft);color:var(--yellow)}
+.badge.live{background:var(--green-soft);color:var(--green)}
+.diag{border-left:4px solid var(--red);background:var(--surface);border-radius:0 10px 10px 0;padding:14px 18px;margin-top:14px;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.diag.ok{border-left-color:var(--green)}
+.diag .t{font-size:17px;font-weight:700;margin-bottom:4px}
+.diag ol{margin:6px 0 0;padding-left:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.kpi .n{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.kpi .v{font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums;margin:2px 0}
+.kpi .d{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums}
+.pill{font-size:11px;padding:0 7px;border-radius:999px;white-space:nowrap}
+.pill.red{background:var(--red-soft);color:var(--red)} .pill.yellow{background:var(--yellow-soft);color:var(--yellow)} .pill.green{background:var(--green-soft);color:var(--green)}
+.up{color:var(--green)} .down{color:var(--red)}
+.chartbox{overflow-x:auto}
+.chartbox svg{display:block;width:100%;min-width:560px;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+.decomp{display:flex;flex-direction:column;gap:10px}
+.dc{display:grid;grid-template-columns:90px minmax(0,1fr) 72px;gap:10px;align-items:center;font-size:13px}
+.dc .track{position:relative;height:14px;background:var(--sunk);border-radius:3px}
+.dc .track .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--muted)}
+.dc .track .b{position:absolute;top:0;bottom:0;border-radius:3px}
+.dc .val{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:12px}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+th.num{text-align:right}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+.ai-out{margin-top:12px;font-size:14px}
+.ai-out h4{margin:10px 0 4px;font-size:13px;color:var(--muted);font-weight:500}
+.ai-out ul{margin:0;padding-left:20px}
+.upload{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+code{font-family:var(--f-mono);font-size:12px;background:var(--sunk);padding:1px 5px;border-radius:4px}
+details.about{margin-top:36px;border-top:1px solid var(--line);padding-top:14px}
+details.about summary{cursor:pointer;font-weight:500}
+.about .body{max-width:700px}
+.about h3{font-size:14px;margin:16px 0 4px}
+.about p{margin:0 0 8px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>仅三天猫运营助手</h1>
+    <div class="status"><span class="dot" id="aiDot"></span><span id="aiStatus">正在连接 AI…</span></div>
+  </div>
+  <div class="seg" role="tablist">
+    <button role="tab" data-tab="check" aria-selected="true"><b>合规预审</b><small>文案能不能发，怎么改</small></button>
+    <button role="tab" data-tab="data" aria-selected="false"><b>店铺数据看板</b><small>哪里波动，可能为什么</small></button>
+  </div>
+</header>
+
+<!-- ================= 合规预审 ================= -->
+<section id="tab-check">
+  <p class="lead"><b>粘贴任何一段要上线的文案，10 秒知道能不能发、该怎么改。</b>标题、主图文字、详情页、万相台创意、达人种草稿、直播话术都适用。</p>
+  <div class="card">
+    <div class="row">
+      <div class="field"><label for="line">产品线</label>
+        <select id="line"><option value="skin">玻麦妍 · 护肤品</option><option value="health">GENEIII · 跨境保健品</option><option value="daily">仅三 · 日化</option></select></div>
+      <div class="field"><label for="scene">文案用在哪里</label>
+        <select id="scene"><option value="detail">详情页</option><option value="title">商品标题</option><option value="points">主图卖点</option><option value="ads">万相台创意</option><option value="content">种草内容 / 达人稿</option><option value="live">直播话术</option></select></div>
+    </div>
+    <details class="settings"><summary>已备案功效（决定哪些功效词可以写）</summary>
+      <div class="chips" id="effBox"></div><p class="hint" id="lineNote"></p></details>
+    <div class="field" style="margin-top:12px"><label for="txt">待预审文案</label>
+      <textarea id="txt">玻麦妍麦角硫因精华，最强抗氧化，三天提亮肤色！修复受损屏障，敏感肌也能放心用，医生推荐的熬夜急救精华。</textarea></div>
+    <div class="acts">
+      <button class="btn" id="aiBtn">AI 深度检查并改写</button>
+      <button class="btn ghost" id="ruleBtn">按建议替换</button>
+      <span class="err" id="cErr"></span>
+    </div>
+  </div>
+  <div id="verdict"></div>
+  <div id="rewriteBox"></div>
+  <h2 class="sec">问题明细</h2>
+  <div class="card"><ul class="issues" id="issues"></ul></div>
+</section>
+
+<!-- ================= 数据看板 ================= -->
+<section id="tab-data" hidden>
+  <p class="lead"><b>导入店铺每日数据，自动找出哪个指标波动、波动来自哪个渠道，并给出初步判断。</b></p>
+  <div class="card">
+    <div class="dhead">
+      <div class="upload">
+        <span id="dataBadge" class="badge">模拟数据 · 演示用</span>
+        <label class="btn ghost sm" for="csv" style="cursor:pointer">上传后台导出表格</label>
+        <input type="file" id="csv" accept=".csv,text/csv" hidden>
+        <button class="btn ghost sm" id="resetData" hidden>恢复模拟数据</button>
+      </div>
+      <span class="lbl" id="dataRange"></span>
+    </div>
+    <p class="hint">表格格式：CSV，列为 <code>日期,访客数,支付转化率,客单价</code>，可选渠道访客列如 <code>搜索访客,推荐访客,万相台访客</code>。对比基准为前 7 天均值；偏离超过 10% 标"关注"，超过 20% 标"异常"。</p>
+    <span class="err" id="dErr"></span>
+  </div>
+  <div id="diag"></div>
+  <div class="kpis" id="kpis"></div>
+  <h2 class="sec">支付金额走势（近 30 天）</h2>
+  <div class="card"><div class="chartbox" id="chart"></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>支付金额</span><span><i style="background:var(--muted)"></i>前 7 天均值</span><span><i style="background:var(--red);height:8px;width:8px;border-radius:50%"></i>异常日</span></div></div>
+  <div class="two" style="margin-top:12px">
+    <div><h2 class="sec" style="margin-top:12px">支付金额变化拆解</h2>
+      <div class="card"><div class="decomp" id="decomp"></div><p class="hint">支付金额 = 访客数 × 支付转化率 × 客单价，按对数分解各因素的贡献。</p></div></div>
+    <div><h2 class="sec" style="margin-top:12px">渠道访客对比</h2>
+      <div class="card tablewrap"><table><thead><tr><th>渠道</th><th class="num">当日</th><th class="num">7 日均值</th><th class="num">变化</th></tr></thead><tbody id="chan"></tbody></table></div></div>
+  </div>
+  <div class="acts"><button class="btn" id="dAiBtn">AI 深入分析</button><span class="hint" style="margin:0">把以上数据交给 AI，列出可能原因和排查清单</span></div>
+  <div id="dAi"></div>
+</section>
+
+<details class="about">
+  <summary>关于这个工具</summary>
+  <div class="body">
+    <h3>为什么先做合规预审</h3>
+    <p>麦角硫因最核心的卖点"抗氧化"，在化妆品里不属于官方功效类别，只能作为成分介绍；同一个成分横跨护肤、保健品、日化三套法规；能否写"提亮"取决于产品是否取得美白类注册证。运营、设计、达人写的每一条文案，上线前都要过这一关。</p>
+    <h3>三道防线</h3>
+    <p>第一道，代码按产品线加载合规词库逐字扫描，结果确定、可追溯。第二道，对照已备案功效判断功效词，"提亮肤色"在没有美白注册证时才算违规。第三道，AI 复审词库抓不到的语境问题，比如暗示疗效的表达，并在保持原意的前提下改写，改写结果会再过一遍扫描。</p>
+    <h3>数据看板怎么接入</h3>
+    <p>当前支持上传生意参谋等后台导出的表格，演示用模拟数据。下一步在商家授权下，通过官方开放接口自动同步店铺数据，不做爬虫。波动判断由代码完成，AI 负责解释原因、生成排查清单。</p>
+    <h3>说明</h3>
+    <p>合规词库依据《广告法》《化妆品监督管理条例》《化妆品分类规则和分类目录》整理，天猫标题 60 字符等平台规则以天猫规则中心原文为准。AI 功能通过后端调用国内可访问的大模型接口，API Key 只保存在服务器上；合规扫描和数据计算不依赖 AI，离线也能使用。</p>
+  </div>
+</details>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ====================== 合规 ====================== */
+const LINES={
+  skin:{brand:"玻麦妍",type:"护肤品",effs:[["保湿",0],["修护",0],["舒缓",0],["控油",0],["紧致",0],["抗皱",0],["美白",1],["防晒",1]],def:["保湿","修护"],
+    note:"虚线框为特殊化妆品功效，需取得注册证。默认勾选为示例，请按真实备案修改。",
+    redline:"化妆品不得明示或暗示医疗作用；只能宣称已备案功效；美白、防晒属于特殊化妆品功效，需注册证；'抗氧化'只能作为成分介绍，不能写成产品功效；不得承诺见效时间；不得虚构使用体验；'敏感肌可用'需测试依据。"},
+  health:{brand:"GENEIII",type:"跨境保健品（膳食补充剂）",effs:[],def:[],note:"跨境膳食补充剂通常没有国内保健功能批准，不能宣称任何保健功能。",
+    redline:"不得宣称预防、治疗疾病；不得宣称保健功能（如'有助于抗氧化''增强免疫力'）；不得保证效果；不得与药品比较；可以介绍成分、工艺、食用方法。"},
+  daily:{brand:"仅三",type:"日化",effs:[["清洁",0],["控油",0],["去屑",0],["防脱",1]],def:["清洁"],note:"防脱属于特殊化妆品功效，需取得注册证。",
+    redline:"不得明示或暗示医疗作用；防脱、生发需特殊化妆品注册证；没有检测报告不得宣称杀菌、除菌；只能宣称已备案功效。"}
+};
+const SCENES={title:"商品标题",points:"主图卖点",detail:"详情页",ads:"万相台创意",content:"种草内容 / 达人稿",live:"直播话术"};
+const SCENE_RULE={title:"不超过 60 字符（汉字计 2），结构为品牌+成分+品类+功效+场景+规格，不放促销信息",points:"每条不超过 10 个字",detail:"保持原有段落结构",ads:"创意标题不超过 20 字",content:"口语化、有生活感，不承诺效果",live:"口语化、短句，保留促单节奏"};
+/* rep：可直接替换的词；空字符串表示删除 */
+const RULES=[
+ {w:["最强","最好","最佳","最高","最优"],l:"red",s:"all",law:"广告法第九条 · 绝对化用语",fix:"删除，或改为具体事实（如'高含量'）",rep:""},
+ {w:["顶级","极致","第一","首个","首选","唯一","独家","王牌","NO.1","No.1"],l:"red",s:"all",law:"广告法第九条 · 绝对化用语",fix:"改为可核实的事实"},
+ {w:["国家级","世界级","全球领先","行业领先"],l:"red",s:"all",law:"广告法第九条",fix:"改为'参与制定麦角硫因团体标准'"},
+ {w:["100%","百分百","永久","万能","绝对","彻底","根治"],l:"red",s:"all",law:"广告法第四条 · 夸大宣传",fix:"删除",rep:""},
+ {w:["医生推荐的","专家推荐的","医生推荐","专家推荐","国家推荐"],l:"red",s:"all",law:"广告法第十六、十八条",fix:"删除",rep:""},
+ {w:["立即见效","立竿见影","速效"],l:"red",s:"all",law:"广告法第四条 · 效果承诺",fix:"改为'坚持使用'",rep:"坚持使用"},
+ {re:"[一二三四五六七八九十两\\d]+\\s?(天|日|周|晚)(就)?(?=(见效|美白|变白|淡斑|提亮|白))",label:"见效时间承诺",l:"red",s:"all",law:"广告法第四条 · 效果承诺",fix:"删除时间承诺",rep:""},
+ {w:["急救"],l:"yellow",s:"all",law:"易被认定为暗示医疗作用",fix:"改为'熬夜后'等场景描述"},
+ {w:["销量第一","TOP1","Top1","冠军","销冠"],l:"yellow",s:"all",law:"广告法第十一条 · 数据需注明出处",fix:"注明平台、品类、时间和来源"},
+ {w:["纯天然","零添加","无添加","无副作用"],l:"yellow",s:"all",law:"广告法第四条",fix:"需检测依据"},
+ {re:"(我|自己)(用了|亲测|坚持用|回购)",label:"第一人称使用体验",l:"yellow",s:"all",law:"广告法第二十八条 · 虚构使用效果",fix:"达人须真实使用；品牌发布改为场景描述"},
+ {w:["消炎","抗菌","杀菌","治疗","治愈","药效"],l:"red",s:"skin",law:"化妆品监督管理条例第三十七条 · 医疗作用",fix:"改为'舒缓'",rep:"舒缓"},
+ {w:["抗敏","脱敏","抗过敏"],l:"red",s:"skin",law:"化妆品监督管理条例第三十七条",fix:"改为'温和'",rep:"温和"},
+ {w:["修复受损屏障","修复受损","修复屏障","修复皮肤"],l:"red",s:"skin",law:"化妆品监督管理条例第三十七条",fix:"改为'修护'（需已备案）",rep:"修护"},
+ {w:["细胞再生","激活细胞"],l:"red",s:"skin",law:"化妆品监督管理条例第三十七条",fix:"删除",rep:""},
+ {w:["祛痘","去疤","祛疤","去红血丝"],l:"red",s:"skin",law:"未备案功效",fix:"改为'清爽'",rep:"清爽"},
+ {w:["药妆","医学护肤","医用级","处方级"],l:"red",s:"skin",law:"监管不认可的概念",fix:"改为'护肤'",rep:"护肤"},
+ {w:["敏感肌也能放心用","敏感肌也能用","敏感肌专用","敏感肌可用","孕妇可用"],l:"yellow",s:"skin",law:"化妆品功效宣称评价规范 · 需测试依据",fix:"无测试报告时改为'质地温和'",rep:"质地温和"},
+ {re:"抗氧化(?!成分|物质)",label:"抗氧化写成产品功效",l:"yellow",s:"skin",law:"抗氧化不属于化妆品官方功效类别",fix:"改为成分介绍：'添加麦角硫因，一种抗氧化成分'"},
+ {w:["预防","治疗","治愈","降血压","降血糖","降血脂","抗癌","防癌"],l:"red",s:"health",law:"广告法第十八条 · 保健食品",fix:"删除",rep:""},
+ {w:["保证有效","无效退款","替代药物","代替药物","比吃药"],l:"red",s:"health",law:"广告法第十八条",fix:"删除",rep:""},
+ {w:["增强免疫","提高免疫力","有助于抗氧化","抗衰老","延缓衰老"],l:"yellow",s:"health",law:"保健功能需国内批准",fix:"改为成分介绍"},
+ {w:["除菌","抑菌","杀菌99.9"],l:"red",s:"daily",law:"需检测报告",fix:"删除",rep:""},
+ {w:["生发","治脱发"],l:"red",s:"daily",law:"特殊化妆品",fix:"改为'强韧发根'",rep:"强韧发根"}
+];
+const EFF_WORDS=[
+ {eff:"美白",lines:["skin"],w:["提亮肤色","美白","亮白","焕白","提亮","淡斑","祛斑","淡化暗沉"],special:true},
+ {eff:"防晒",lines:["skin"],w:["防晒","SPF","隔离紫外线"],special:true},
+ {eff:"抗皱",lines:["skin"],w:["抗皱","淡纹","抗衰"]},
+ {eff:"紧致",lines:["skin"],w:["紧致","提拉"]},
+ {eff:"修护",lines:["skin"],w:["修护"]},
+ {eff:"舒缓",lines:["skin"],w:["舒缓"]},
+ {eff:"控油",lines:["skin","daily"],w:["控油"]},
+ {eff:"去屑",lines:["daily"],w:["去屑"]},
+ {eff:"防脱",lines:["daily"],w:["防脱"],special:true}
+];
+const L=()=>$("line").value, S=()=>$("scene").value;
+const effs=()=>[...document.querySelectorAll("#effBox input:checked")].map(i=>i.value);
+function charLen(s){let n=0;for(const c of s||"")n+=/[\u0000-ÿ]/.test(c)?1:2;return n}
+function scan(text){
+  const hits=[];if(!text)return hits;const line=L(),E=effs();
+  for(const r of RULES){if(r.s!=="all"&&r.s!==line)continue;
+    if(r.re){const re=new RegExp(r.re,"g");let m;while((m=re.exec(text))){if(m[0].length)hits.push({s:m.index,e:m.index+m[0].length,w:m[0],l:r.l,why:r.label+" · "+r.law,fix:r.fix,rep:r.rep});else re.lastIndex++}}
+    else for(const w of r.w){let i=-1;while((i=text.indexOf(w,i+1))>-1)hits.push({s:i,e:i+w.length,w,l:r.l,why:r.law,fix:r.fix,rep:r.rep})}}
+  for(const f of EFF_WORDS){if(!f.lines.includes(line)||E.includes(f.eff))continue;
+    for(const w of f.w){let i=-1;while((i=text.indexOf(w,i+1))>-1)hits.push({s:i,e:i+w.length,w,l:"red",why:`未备案「${f.eff}」功效${f.special?"，属于特殊化妆品，需注册证":""}`,fix:"删除，或确认已备案后在上方勾选",rep:f.special?"":undefined})}}
+  hits.sort((a,b)=>a.s-b.s||(b.e-b.s)-(a.e-a.s));
+  const out=[];for(const h of hits){const o=out.find(x=>h.s<x.e&&h.e>x.s);if(o){if(h.l==="red"&&o.l==="yellow")Object.assign(o,h);continue}out.push(h)}
+  const sc=S();
+  if(sc==="title"&&charLen(text)>60)out.push({s:-1,e:-1,w:`标题 ${charLen(text)} 字符`,l:"red",why:"超过天猫标题 60 字符上限（汉字计 2）",fix:"删减修饰词"});
+  if(sc==="title"&&/(包邮|特价|秒杀|清仓|\d+元)/.test(text))out.push({s:-1,e:-1,w:"标题含促销信息",l:"yellow",why:"挤占关键词位置，活动结束后易过期",fix:"移到主图或卖点"});
+  if(sc==="ads"&&[...text].length>20)out.push({s:-1,e:-1,w:`创意 ${[...text].length} 字`,l:"yellow",why:"超过内部建议的 20 字",fix:"精简为一个卖点"});
+  return out;
+}
+function marked(text,hits){let h="",p=0;for(const x of hits.filter(x=>x.s>=0)){h+=esc(text.slice(p,x.s))+`<mark class="${x.l==="red"?"r":"y"}" title="${esc(x.why)}">${esc(text.slice(x.s,x.e))}</mark>`;p=x.e}return h+esc(text.slice(p))}
+function tidy(t){return t.replace(/，{2,}/g,"，").replace(/^[，。！]+/,"").replace(/，([。！])/g,"$1").replace(/\s{2,}/g," ")}
+function applyRules(text){const hits=scan(text).filter(h=>h.s>=0&&h.rep!==undefined).sort((a,b)=>b.s-a.s);let t=text;const ch=[];for(const h of hits){t=t.slice(0,h.s)+h.rep+t.slice(h.e);ch.push({from:h.w,to:h.rep,why:h.why})}return {text:tidy(t),changes:ch.reverse()}}
+
+let aiExtra=[];let rewrite=null;
+function renderCheck(){
+  const text=$("txt").value;const hits=scan(text);
+  const r=hits.filter(h=>h.l==="red").length+aiExtra.filter(x=>x.level==="red").length;
+  const y=hits.length+aiExtra.length-r;
+  const cls=r?"red":y?"yellow":"green";
+  const big=!text.trim()?"等待输入":r?"不能发布":y?"核实依据后再发布":"可以发布";
+  const sub=!text.trim()?"粘贴文案后自动预审":r?"有禁止使用的表达，必须修改":y?"部分表达需要备案、检测或数据支持":"词库内未发现风险，语境问题可用 AI 深度检查";
+  $("verdict").innerHTML=`<div class="verdict ${cls}"><div><div class="big">${big}</div><div class="sub">${sub}</div></div><div class="cnt">🔴 ${r}　🟡 ${y}</div></div>${text.trim()?`<div class="card marked">${marked(text,hits)}</div>`:""}`;
+  const items=hits.map(h=>`<li class="issue ${h.l}"><div><span class="w">${esc(h.w)}</span><span class="lv">${h.l==="red"?"禁止使用":"需要依据"}</span></div><div class="why">${esc(h.why)}</div><div class="fix">→ ${esc(h.fix)}</div>${h.s>=0&&h.rep!==undefined?`<div class="r"><button class="btn ghost sm" data-one="${h.s}">替换</button></div>`:""}</li>`)
+    .concat(aiExtra.map(x=>`<li class="issue ai"><div><span class="w">${esc(x.quote)}</span><span class="lv">AI 语境复审</span></div><div class="why">${esc(x.reason)}</div><div class="fix">→ ${esc(x.fix||"")}</div></li>`));
+  $("issues").innerHTML=items.join("")||'<li class="pass">✓ 没有发现问题</li>';
+  $("ruleBtn").disabled=!hits.some(h=>h.s>=0&&h.rep!==undefined);
+  renderRewrite();
+}
+function renderRewrite(){
+  if(!rewrite){$("rewriteBox").innerHTML="";return}
+  const hits=scan(rewrite.text);const r=hits.filter(h=>h.l==="red").length,y=hits.length-r;
+  $("rewriteBox").innerHTML=`<div class="rewrite"><div class="head"><b>${rewrite.by==="ai"?"AI 改写结果":"按建议替换结果"}</b><span>${hits.length?`<span class="${r?"down":""}">复检：🔴 ${r}　🟡 ${y}</span>`:'<span class="pass">✓ 复检通过</span>'}</span></div>
+    <div class="marked" style="margin-top:0">${marked(rewrite.text,hits)}</div>
+    ${rewrite.changes?.length?`<ul class="changes">${rewrite.changes.map(c=>`<li><del>${esc(c.from)}</del> → ${c.to?`<ins>${esc(c.to)}</ins>`:'<span class="y">删除</span>'}　<span class="y">${esc(c.why||"")}</span></li>`).join("")}</ul>`:""}
+    <div class="acts"><button class="btn sm" id="useRw">用这一版替换原文</button><button class="btn ghost sm" id="cpRw">复制</button></div></div>`;
+}
+function renderEffs(){
+  const D=LINES[L()];
+  $("effBox").innerHTML=D.effs.length?D.effs.map(([n,sp])=>`<label class="chip${sp?" special":""}"><input type="checkbox" id="eff-${n}" value="${n}" ${D.def.includes(n)?"checked":""}>${n}</label>`).join(""):'<span class="hint" style="margin:0">无可宣称功效</span>';
+  $("lineNote").textContent=D.note;
+}
+async function aiCheck(){
+  $("cErr").textContent="";
+  if(!sampleFn){$("cErr").textContent="AI 未连接，可先用「按建议替换」。";return}
+  const text=$("txt").value.trim();if(!text)return;
+  const D=LINES[L()];const hits=scan(text);
+  const btn=$("aiBtn");btn.disabled=true;const old=btn.textContent;btn.innerHTML='<span class="spinner"></span> 检查中…';
+  try{
+    const out=await sampleFn.json(`你是天猫美妆个护与保健品类目的广告合规编辑，服务品牌：仅三生物（核心成分：麦角硫因，合成生物技术制备）。
+【产品线】${D.brand}（${D.type}）
+【已备案功效】${effs().length?effs().join("、"):"无（不得宣称任何功效）"}
+【合规红线】${D.redline}
+通用：不得使用绝对化用语、医生专家推荐、见效时间承诺。
+【使用场景】${SCENES[S()]}：${SCENE_RULE[S()]}
+【待审文案】${text}
+【词库已发现的问题】
+${hits.map(h=>`- 「${h.w}」：${h.why}`).join("\n")||"无"}
+
+任务：
+1. 找出词库没有覆盖、但在语境中有风险的表达（如暗示疗效、夸大、无法核实的承诺、把成分特性说成产品功效）。不要重复词库已发现的问题。没有就返回空数组。
+2. 在保持原意和卖点的前提下，改写成可以直接发布的版本，符合使用场景的写法。
+3. 列出每一处改动及原因。
+只输出 JSON：{"extra_issues":[{"quote":"原文片段","reason":"风险原因","fix":"建议","level":"red或yellow"}],"rewrite":"改写后的完整文案","changes":[{"from":"原表达","to":"新表达（删除则为空）","why":"原因"}]}`,{modelTier:"default",cache:false});
+    aiExtra=Array.isArray(out.extra_issues)?out.extra_issues:[];
+    rewrite={text:out.rewrite||"",changes:out.changes||[],by:"ai"};renderCheck();
+  }catch(e){$("cErr").textContent=e.code==="rate_limited"?"请求太频繁，请稍后再试。":e.code==="not_granted"?"需要允许页面调用 AI。":(e.message||"检查失败，请重试。")}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+
+/* ====================== 数据看板 ====================== */
+const CH_NAMES=["搜索","推荐","万相台","短视频直播","其他"];
+function rng(seed){return()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646}}
+function mockData(){
+  const r=rng(20261019);const base={搜索:4200,推荐:3100,万相台:2600,短视频直播:1500,其他:600};
+  const rows=[];const end=new Date(2026,9,19);
+  for(let i=29;i>=0;i--){
+    const d=new Date(end);d.setDate(end.getDate()-i);
+    const wk=[0,6].includes(d.getDay())?1.12:1;const ch={};
+    for(const k of CH_NAMES)ch[k]=Math.round(base[k]*wk*(0.94+r()*0.12));
+    let conv=3.2*(0.95+r()*0.1),aov=268*(0.96+r()*0.08);
+    if(i===18){for(const k of CH_NAMES)ch[k]=Math.round(ch[k]*1.3);conv*=1.08}
+    if(i===0){ch["万相台"]=Math.round(ch["万相台"]*0.32);conv*=0.89}
+    const v=Object.values(ch).reduce((a,b)=>a+b,0);
+    rows.push({date:`${d.getMonth()+1}-${String(d.getDate()).padStart(2,"0")}`,visitors:v,conv:+conv.toFixed(2),aov:+aov.toFixed(1),ch});
+  }
+  return rows;
+}
+let DATA=mockData();let dataSrc="mock";
+const sales=r=>r.visitors*r.conv/100*r.aov;
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const pct=(a,b)=>b?(a-b)/b*100:0;
+const fmt=n=>n>=10000?(n/10000).toFixed(2)+"万":Math.round(n).toLocaleString("zh-CN");
+const level=p=>Math.abs(p)>=20?"red":Math.abs(p)>=10?"yellow":"green";
+const LV_NAME={red:"异常",yellow:"关注",green:"正常"};
+function analyze(){
+  const n=DATA.length;const cur=DATA[n-1];const prev=DATA.slice(Math.max(0,n-8),n-1);
+  const b={visitors:avg(prev.map(r=>r.visitors)),conv:avg(prev.map(r=>r.conv)),aov:avg(prev.map(r=>r.aov)),sales:avg(prev.map(sales))};
+  const k={sales:pct(sales(cur),b.sales),visitors:pct(cur.visitors,b.visitors),conv:pct(cur.conv,b.conv),aov:pct(cur.aov,b.aov)};
+  const lnT=Math.log(sales(cur)/b.sales)||0;
+  const parts={visitors:Math.log(cur.visitors/b.visitors),conv:Math.log(cur.conv/b.conv),aov:Math.log(cur.aov/b.aov)};
+  const contrib={};for(const x in parts)contrib[x]=lnT?parts[x]/lnT*k.sales:0;
+  const chans=Object.keys(cur.ch||{}).map(c=>{const base=avg(prev.map(r=>r.ch?.[c]||0));return {c,cur:cur.ch[c],base,p:pct(cur.ch[c],base)}});
+  return {cur,b,k,contrib,chans};
+}
+const CH_ADVICE={搜索:"检查核心关键词排名、标题是否被改动、竞品是否降价",推荐:"检查主图点击率、商品是否被降权、近期差评",万相台:"检查推广计划预算是否提前耗尽、出价或人群是否被调整、账户余额是否充足",短视频直播:"检查当天是否正常开播、短视频发布量是否减少",其他:"检查站外引流和老客回访渠道"};
+const F_NAME={visitors:"访客数",conv:"支付转化率",aov:"客单价"};
+const F_ADVICE={conv:"检查价格是否变动、是否出现集中差评、主力 SKU 是否缺货、详情页是否改版、竞品是否在做活动",aov:"检查组合装和赠品机制是否变化、低价 SKU 的销售占比是否上升"};
+function renderData(){
+  $("dataBadge").textContent=dataSrc==="mock"?"模拟数据 · 演示用":"已导入表格数据";
+  $("dataBadge").className="badge"+(dataSrc==="mock"?"":" live");$("resetData").hidden=dataSrc==="mock";
+  $("dataRange").textContent=`${DATA[0].date} 至 ${DATA[DATA.length-1].date}，共 ${DATA.length} 天`;
+  const A=analyze();const {cur,b,k,contrib,chans}=A;
+  // 诊断
+  const lv=level(k.sales);
+  const main=Object.keys(contrib).sort((x,y)=>Math.abs(contrib[y])-Math.abs(contrib[x]))[0];
+  const dir=k.sales<0?"下降":"上升";
+  let steps=[];
+  if(lv!=="green"){
+    if(main==="visitors"&&chans.length){const worst=[...chans].sort((x,y)=>k.sales<0?(x.cur-x.base)-(y.cur-y.base):(y.cur-y.base)-(x.cur-x.base))[0];
+      steps.push(`访客变化集中在「${worst.c}」渠道（${worst.p>0?"+":""}${worst.p.toFixed(0)}%），${CH_ADVICE[worst.c]||"检查该渠道近期的投放和活动变化"}。`)}
+    else if(F_ADVICE[main])steps.push(F_ADVICE[main]+"。");
+    steps.push("对比同一天竞品店铺和类目大盘，判断是店铺自身问题还是整体流量波动。");
+  }
+  $("diag").innerHTML=`<div class="diag ${lv==="green"?"ok":""}"><div class="t">${cur.date}：${lv==="green"?"经营数据平稳":`支付金额较前 7 天均值${dir} ${Math.abs(k.sales).toFixed(0)}%`}</div>
+    <div>${lv==="green"?"各项指标偏离均在 10% 以内，无需特别处理。":`主要来自<b>${F_NAME[main]}</b>${contrib[main]>0?"上升":"下降"}（贡献 ${contrib[main]>0?"+":""}${contrib[main].toFixed(1)} 个百分点）。`}</div>
+    ${steps.length?`<ol>${steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:""}</div>`;
+  // KPI
+  const kp=[["支付金额",sales(cur),b.sales,k.sales,"¥"],["访客数",cur.visitors,b.visitors,k.visitors,""],["支付转化率",cur.conv,b.conv,k.conv,"%"],["客单价",cur.aov,b.aov,k.aov,"¥"]];
+  $("kpis").innerHTML=kp.map(([n,v,bv,p,u])=>{const l=level(p);const val=u==="%"?v.toFixed(2)+"%":(u==="¥"?"¥":"")+(n==="客单价"?v.toFixed(0):fmt(v));
+    return `<div class="kpi"><div class="n"><span>${n}</span><span class="pill ${l}">${LV_NAME[l]}</span></div><div class="v">${val}</div><div class="d ${p<0?"down":"up"}">${p>0?"+":""}${p.toFixed(1)}% <span style="color:var(--muted)">较 7 日均值</span></div></div>`}).join("");
+  // 拆解
+  const mx=Math.max(5,...Object.values(contrib).map(Math.abs),Math.abs(k.sales));
+  const bar=(label,v,color)=>{const w=Math.abs(v)/mx*50;return `<div class="dc"><span>${label}</span><div class="track"><div class="mid"></div><div class="b" style="background:${color};${v<0?`right:50%;width:${w}%`:`left:50%;width:${w}%`}"></div></div><span class="val ${v<0?"down":"up"}">${v>0?"+":""}${v.toFixed(1)}%</span></div>`};
+  $("decomp").innerHTML=bar("支付金额",k.sales,"var(--accent)")+Object.keys(contrib).map(x=>bar(F_NAME[x],contrib[x],contrib[x]<0?"var(--red)":"var(--green)")).join("");
+  // 渠道
+  $("chan").innerHTML=chans.length?chans.map(c=>{const l=level(c.p);return `<tr><td>${esc(c.c)} ${l!=="green"?`<span class="pill ${l}">${LV_NAME[l]}</span>`:""}</td><td class="num">${fmt(c.cur)}</td><td class="num">${fmt(c.base)}</td><td class="num ${c.p<0?"down":"up"}">${c.p>0?"+":""}${c.p.toFixed(1)}%</td></tr>`}).join(""):'<tr><td colspan="4" class="hint">表格中没有渠道访客列</td></tr>';
+  drawChart();
+  $("dAi").innerHTML="";
+}
+function drawChart(){
+  const W=720,H=230,pl=56,pr=14,pt=14,pb=28;const s=DATA.map(sales);const n=s.length;
+  const ma=s.map((_,i)=>i>=7?avg(s.slice(i-7,i)):null);
+  const lo=Math.min(...s)*0.85,hi=Math.max(...s)*1.05;
+  const x=i=>pl+(W-pl-pr)*i/(n-1),y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
+  const ticks=4;let g="";
+  for(let t=0;t<=ticks;t++){const v=lo+(hi-lo)*t/ticks;g+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${pl-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${(v/10000).toFixed(1)}万</text>`}
+  for(let i=0;i<n;i+=Math.ceil(n/7)){g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${DATA[i].date}</text>`}
+  g+=`<text x="${x(n-1)}" y="${H-8}" text-anchor="end" font-size="11" fill="var(--ink)">${DATA[n-1].date}</text>`;
+  const path=s.map((v,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const area=path+`L${x(n-1)},${H-pb}L${x(0)},${H-pb}Z`;
+  const mpath=ma.map((v,i)=>v==null?"":`${ma[i-1]==null?"M":"L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const dots=s.map((v,i)=>ma[i]!=null&&Math.abs(pct(v,ma[i]))>=20?`<circle cx="${x(i)}" cy="${y(v)}" r="5" fill="var(--red)" stroke="var(--surface)" stroke-width="2"><title>${DATA[i].date} 偏离 7 日均值 ${pct(v,ma[i]).toFixed(0)}%</title></circle>`:"").join("");
+  $("chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="近 30 天支付金额走势">${g}<path d="${area}" fill="var(--accent)" opacity="0.08"/><path d="${mpath}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}<circle cx="${x(n-1)}" cy="${y(s[n-1])}" r="3.5" fill="var(--accent)"/></svg>`;
+}
+function parseCSV(t){
+  const lines=t.replace(/\r/g,"").split("\n").filter(l=>l.trim());if(lines.length<9)throw new Error("至少需要 8 天的数据（含表头共 9 行）。");
+  const head=lines[0].split(",").map(h=>h.trim().replace(/^﻿/,""));
+  const idx=k=>head.findIndex(h=>h.includes(k));
+  const di=idx("日期"),vi=head.findIndex(h=>h==="访客数"||h==="访客"),ci=idx("转化率"),ai=idx("客单价");
+  if(di<0||vi<0||ci<0||ai<0)throw new Error("缺少必需列：日期、访客数、支付转化率、客单价。");
+  const chCols=head.map((h,i)=>({h,i})).filter(o=>o.i!==vi&&/访客$/.test(o.h));
+  return lines.slice(1).map(l=>{const c=l.split(",");const ch={};for(const o of chCols)ch[o.h.replace(/访客$/,"")]=+c[o.i]||0;
+    const conv=parseFloat(String(c[ci]).replace("%",""));return {date:c[di].trim(),visitors:+c[vi],conv:conv<1?conv*100:conv,aov:+c[ai],ch}});
+}
+async function aiData(){
+  if(!sampleFn){$("dAi").innerHTML='<p class="err">AI 未连接：请检查后端服务和 API Key 配置。数据计算部分仍可正常使用。</p>';return}
+  const A=analyze();const btn=$("dAiBtn");btn.disabled=true;const old=btn.textContent;btn.innerHTML='<span class="spinner"></span> 分析中…';
+  const recent=DATA.slice(-8).map(r=>({date:r.date,visitors:r.visitors,conv:r.conv,aov:r.aov,sales:Math.round(sales(r)),channels:r.ch}));
+  try{
+    const out=await sampleFn.json(`你是天猫美妆个护类目品牌旗舰店的资深电商运营。下面是店铺近 8 天的经营数据和代码已算出的波动分析（对比基准为前 7 天均值）。
+【近 8 天数据】${JSON.stringify(recent)}
+【波动分析】支付金额变化 ${A.k.sales.toFixed(1)}%；访客贡献 ${A.contrib.visitors.toFixed(1)}，转化率贡献 ${A.contrib.conv.toFixed(1)}，客单价贡献 ${A.contrib.aov.toFixed(1)} 个百分点；渠道变化 ${JSON.stringify(A.chans.map(c=>({渠道:c.c,变化:c.p.toFixed(1)+"%"})))}
+任务：基于数据给出初步判断。只能依据给出的数据推理，数据无法证明的原因要标明"需核实"。按可能性从高到低列出原因，每个原因给出数据证据和在天猫后台（千牛、生意参谋、万相台）的具体排查动作，最后给出今天的 3 个行动建议。
+只输出 JSON：{"judgement":"一句话结论","causes":[{"cause":"可能原因","evidence":"数据证据","check":"去哪里查、查什么"}],"todo":["行动1","行动2","行动3"]}`,{modelTier:"default",cache:false});
+    $("dAi").innerHTML=`<div class="card ai-out"><b>${esc(out.judgement)}</b><h4>可能原因</h4><ul>${(out.causes||[]).map(c=>`<li><b>${esc(c.cause)}</b><br><span class="hint" style="margin:0">证据：${esc(c.evidence)}</span><br>排查：${esc(c.check)}</li>`).join("")}</ul><h4>今天的行动</h4><ul>${(out.todo||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`;
+  }catch(e){const m={not_granted:"页面调用 AI 需要你的授权：请在弹窗中点「允许」，或在页面右上角的权限设置里开启后刷新。",rate_limited:"请求太频繁，请稍等一分钟再试。",invalid_json:"AI 返回的格式不完整，请再点一次。",usage_limit:"当前账号的 AI 用量已达上限。"};$("dAi").innerHTML=`<p class="err">${esc(m[e.code]||e.message||"分析失败，请重试。")}${e.code?`（错误代码：${esc(e.code)}）`:""}</p>`}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+
+/* ====================== AI 连接与事件 ====================== */
+let sampleFn=null;
+/* 部署版：优先使用自己后端的 /api/ai（国内大模型），在 Claude 中打开时也可用 Claude */
+const serverAI={json:async(prompt)=>{
+  const r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw{code:d.code||"upstream_error",message:d.message||"AI 服务暂时不可用，请稍后重试。"};
+  return d.data;
+}};
+(async()=>{
+  try{const r=await fetch("/api/health");if(r.ok&&(await r.json()).ok)sampleFn=serverAI}catch(_){}
+  if(!sampleFn){try{sampleFn=window.claude?.use?await window.claude.use("sample"):null}catch(_){sampleFn=null}}
+  $("aiDot").classList.toggle("on",!!sampleFn);$("aiStatus").textContent=sampleFn?"AI 已连接":"AI 未连接 · 合规扫描和数据计算仍可使用"})();
+document.querySelector(".seg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  $("tab-check").hidden=b.dataset.tab!=="check";$("tab-data").hidden=b.dataset.tab!=="data";
+  try{history.replaceState(null,"","#"+b.dataset.tab)}catch(_){}});
+const resetAI=()=>{aiExtra=[];rewrite=null};
+$("txt").addEventListener("input",()=>{resetAI();renderCheck()});
+$("line").addEventListener("change",()=>{renderEffs();resetAI();renderCheck()});
+$("scene").addEventListener("change",()=>{resetAI();renderCheck()});
+$("effBox").addEventListener("change",()=>{resetAI();renderCheck()});
+$("aiBtn").addEventListener("click",aiCheck);
+$("ruleBtn").addEventListener("click",()=>{const r=applyRules($("txt").value);rewrite={...r,by:"rule"};aiExtra=[];renderCheck()});
+document.addEventListener("click",async e=>{
+  const one=e.target.closest("[data-one]");if(one){const t=$("txt").value;const h=scan(t).find(x=>x.s===+one.dataset.one);if(h){$("txt").value=tidy(t.slice(0,h.s)+h.rep+t.slice(h.e));resetAI();renderCheck()}return}
+  if(e.target.id==="useRw"&&rewrite){$("txt").value=rewrite.text;resetAI();renderCheck();return}
+  if(e.target.id==="cpRw"&&rewrite){try{await navigator.clipboard.writeText(rewrite.text);e.target.textContent="已复制"}catch(_){e.target.textContent="请手动选择"}}
+});
+$("csv").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;$("dErr").textContent="";
+  try{DATA=parseCSV(await f.text());dataSrc="file";renderData()}catch(err){$("dErr").textContent=err.message||"无法读取表格"}});
+$("resetData").addEventListener("click",()=>{DATA=mockData();dataSrc="mock";renderData()});
+$("dAiBtn").addEventListener("click",aiData);
+renderEffs();renderCheck();renderData();
+if(location.hash==="#data")document.querySelector('[data-tab="data"]').click();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "geneiii-tmall-assistant",
+  "version": "1.0.0",
+  "description": "仅三天猫运营助手：合规预审与改写、店铺数据看板",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
